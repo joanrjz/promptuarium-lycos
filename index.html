@@ -16,6 +16,32 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js"></script>
     <!-- docx for Word Export -->
     <script src="https://cdn.jsdelivr.net/npm/docx@7.3.0/build/docx.js"></script>
+<title>Mi app con Supabase</title>
+    
+    <!-- 1. Cargas la librería de Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+    <h1>¡Hola Mundo!</h1>
+
+    <script>
+        // 2. PEGAS TU CÓDIGO AQUÍ CON TUS DATOS REALES:
+        const supabaseUrl = 'https://ivrvxmvmogtqvdkcvspg.supabase.co/rest/v1/'
+        const supabaseAnonKey = 'sb_publishable_XlSfqHSuvfUideKZm64DMw_hXfM5M-7'
+
+        // Inicializas Supabase
+        const { createClient } = supabase
+        const _supabase = createClient(supabaseUrl, supabaseAnonKey)
+
+        console.log("¡Supabase conectado con éxito!", _supabase)
+    </script>
+
+
+
+<!-- === AGREGAR AQUÍ EL SCRIPT DE SUPABASE === -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -1123,100 +1149,5 @@
             updateDashboard();
         };
     </script>
-<!-- MODAL DE INICIO DE SESIÓN -->
-<div id="modalLogin" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden fade-in border border-slate-100">
-        <div class="bg-indigo-900 px-6 py-8 text-white text-center relative">
-            <div class="w-16 h-16 bg-indigo-600 rounded-2xl mx-auto flex items-center justify-center text-2xl shadow-inner mb-3">
-                <i class="fa-solid fa-lock"></i>
-            </div>
-            <h3 class="text-xl font-bold tracking-tight">Promptuarium Lycos</h3>
-            <p class="text-xs text-indigo-300 mt-1">Ingrese sus credenciales para acceder al sistema</p>
-        </div>
-        <form onsubmit="handleLogin(event)" class="p-6 space-y-4">
-            <div>
-                <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Usuario</label>
-                <select id="loginUser" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    <option value="">Seleccione su usuario...</option>
-                    <option value="JA">JA (Administrador)</option>
-                    <option value="OA">OA (Gestor)</option>
-                    <option value="MA">MA (Gestor)</option>
-                    <option value="EB">EB (Gestor)</option>
-                    <option value="HM">HM (Gestor)</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Contraseña</label>
-                <input type="password" id="loginPassword" required placeholder="••••••••••••" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            </div>
-            <div id="loginError" class="hidden text-rose-600 text-xs font-semibold text-center bg-rose-50 p-2 rounded-lg"></div>
-            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl transition shadow-lg shadow-indigo-200 text-sm">
-                Iniciar Sesión
-            </button>
-        </form>
-    </div>
-</div>
-
-<script>
-    // Base de datos de usuarios autorizados
-    const systemUsers = {
-        "JA": { pass: "Lycos@Gladiador1972", role: "admin", name: "Administrador (JA)" },
-        "OA": { pass: "S9l3m8000", role: "gestor", name: "Gestor OA" },
-        "MA": { pass: "S9l3m8000", role: "gestor", name: "Gestor MA" },
-        "EB": { pass: "S9l3m8000", role: "gestor", name: "Gestor EB" },
-        "HM": { pass: "S9l3m8000", role: "gestor", name: "Gestor HM" }
-    };
-
-    let currentUser = null;
-
-    // Función de Autenticación
-    function handleLogin(event) {
-        event.preventDefault();
-        const userKey = document.getElementById('loginUser').value;
-        const passKey = document.getElementById('loginPassword').value;
-        const errorDiv = document.getElementById('loginError');
-
-        if (systemUsers[userKey] && systemUsers[userKey].pass === passKey) {
-            currentUser = { username: userKey, ...systemUsers[userKey] };
-            document.getElementById('modalLogin').classList.add('hidden');
-            
-            // Actualizar interfaz con el usuario activo
-            const sesionText = document.querySelector('header .text-right p:nth-child(2)');
-            if(sesionText) {
-                sesionText.textContent = `Sesión Activa: ${currentUser.name}`;
-            }
-
-            // Si es gestor, ocultamos o limitamos elementos de eliminación o configuración si fuera necesario
-            checkPermissionsUI();
-        } else {
-            errorDiv.textContent = "Credenciales incorrectas. Verifique usuario y contraseña.";
-            errorDiv.classList.remove('hidden');
-        }
-    }
-
-    // Restricción visual de permisos
-    function checkPermissionsUI() {
-        if (currentUser && currentUser.role === 'gestor') {
-            console.log("Modo Gestor Activo: Sin permisos de eliminación.");
-        }
-    }
-
-    // Función global de validación para eliminar (Integrar en sus botones de borrar)
-    function validateDeleteAction() {
-        if (!currentUser || currentUser.role !== 'admin') {
-            alert("Acceso denegado: Solo el Administrador (JA) tiene permisos para eliminar registros del sistema.");
-            return false;
-        }
-        return confirm("¿Está seguro de que desea eliminar este registro?");
-    }
-
-    // Ejemplo de protección en funciones de borrado (Asegúrese de envolver sus confirmaciones de eliminación con validateDeleteAction())
-    // 
-    // MODIFICAR LAS FUNCIONES DE ELIMINACIÓN EXISTENTE EN SU CÓDIGO ASI:
-    // function eliminarConsumible(id) {
-    //      if(!validateDeleteAction()) return;
-    //      // ... resto de su lógica de borrado ...
-    // }
-</script>
 </body>
 </html>
