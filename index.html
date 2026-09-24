@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Profesional de Control de Consumibles - Promptuarium Lycos</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- SheetJS for Excel Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- html2pdf for High-Resolution PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js"></script>
+    <!-- docx for Word Export -->
+    <script src="https://cdn.jsdelivr.net/npm/docx@7.3.0/build/docx.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 h-full flex flex-col antialiased">
+
+    <!-- Top Navigation Bar -->
+    <header class="bg-indigo-900 text-white shadow-md z-20 flex-shrink-0">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-indigo-600 p-2 rounded-xl text-white shadow-inner">
+                    <i class="fa-solid fa-boxes-stacked text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold tracking-tight">Promptuarium Lycos</h1>
+                    <p class="text-xs text-indigo-300">Control Integral de Inventario y Abastecimiento</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div id="stockAlertBadge" class="hidden items-center bg-rose-500/20 border border-rose-400 text-rose-200 px-3 py-1 rounded-full text-xs font-medium cursor-pointer animate-pulse" onclick="switchTab('inventario')">
+                    <i class="fa-solid fa-triangle-exclamation mr-1.5"></i> Stock Crítico
+                </div>
+                <div class="text-right hidden sm:block">
+                    <p class="text-xs font-semibold text-white" id="currentDateDisplay">--/--/----</p>
+                    <p class="text-[10px] text-indigo-300">Modo Consulta / Admin protegido</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="flex-1 flex overflow-hidden">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="w-64 bg-white border-r border-slate-200 flex flex-col flex-shrink-0 transition-all duration-300">
+            <div class="p-4 flex-1 space-y-1">
+                <p class="px-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Menú Principal</p>
+                
+                <button onclick="switchTab('dashboard')" id="nav-dashboard" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors bg-indigo-50 text-indigo-700">
+                    <i class="fa-solid fa-chart-pie w-5 text-center"></i>
+                    <span>Panel General</span>
+                </button>
+                
+                <button onclick="switchTab('inventario')" id="nav-inventario" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors">
+                    <i class="fa-solid fa-warehouse w-5 text-center"></i>
+                    <span>Inventario Bodega</span>
+                </button>
+
+                <button onclick="switchTab('abastecimiento')" id="nav-abastecimiento" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors">
+                    <i class="fa-solid fa-truck-ramp-box w-5 text-center"></i>
+                    <span>Surtido y Abastecimiento</span>
+                </button>
+
+                <button onclick="switchTab('reportes')" id="nav-reportes" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors">
+                    <i class="fa-solid fa-file-lines w-5 text-center"></i>
+                    <span>Reportes & Exportar</span>
+                </button>
+            </div>
+
+            <div class="p-4 border-t border-slate-200">
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs">
+                    <p class="font-semibold text-slate-700 mb-1"><i class="fa-solid fa-lock text-indigo-600 mr-1"></i> Seguridad Activa</p>
+                    <p class="text-slate-500">Modificaciones protegidas con contraseña de administrador.</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 overflow-y-auto bg-slate-50 p-4 sm:p-6 lg:p-8">
+
+            <!-- TAB 1: DASHBOARD -->
+            <div id="tab-dashboard" class="space-y-6 fade-in">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Panel de Control General</h2>
+                        <p class="text-sm text-slate-500">Resumen en tiempo real del stock de bodega y operaciones de abastecimiento.</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="verificarAccesoAdmin() && (switchTab('inventario'), openModal('consumible'))" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-medium shadow-sm transition flex items-center gap-2">
+                            <i class="fa-solid fa-plus"></i> Nuevo Consumible
+                        </button>
+                        <button onclick="verificarAccesoAdmin() && (switchTab('abastecimiento'), openModal('surtido'))" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-medium shadow-sm transition flex items-center gap-2">
+                            <i class="fa-solid fa-hand-holding-droplet"></i> Surtir a Usuario
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Metrics Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Consumibles</p>
+                            <h3 class="text-2xl font-bold text-slate-900 mt-1" id="statTotalItems">0</h3>
+                            <p class="text-xs text-slate-500 mt-1">Referencias registradas</p>
+                        </div>
+                        <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center text-xl shadow-inner">
+                            <i class="fa-solid fa-box"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Stock en Bodega</p>
+                            <h3 class="text-2xl font-bold text-slate-900 mt-1" id="statTotalStock">0</h3>
+                            <p class="text-xs text-slate-500 mt-1">Unidades totales disponibles</p>
+                        </div>
+                        <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-xl shadow-inner">
+                            <i class="fa-solid fa-warehouse"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Alertas Stock Mínimo</p>
+                            <h3 class="text-2xl font-bold text-rose-600 mt-1" id="statLowStock">0</h3>
+                            <p class="text-xs text-slate-500 mt-1">Requieren reabastecimiento</p>
+                        </div>
+                        <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center text-xl shadow-inner">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Surtidos Históricos</p>
+                            <h3 class="text-2xl font-bold text-slate-900 mt-1" id="statTotalSurtidos">0</h3>
+                            <p class="text-xs text-slate-500 mt-1">Entregas registradas</p>
+                        </div>
+                        <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center text-xl shadow-inner">
+                            <i class="fa-solid fa-clipboard-check"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Tables -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                                <i class="fa-solid fa-triangle-exclamation text-rose-500"></i> Alertas de Stock Mínimo
+                            </h3>
+                            <span id="lowStockCountBadge" class="bg-rose-100 text-rose-700 text-xs font-semibold px-2.5 py-0.5 rounded-full">0</span>
+                        </div>
+                        <div class="flex-1 overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-slate-50 text-slate-500 text-xs uppercase">
+                                    <tr>
+                                        <th class="p-3 font-semibold rounded-l-lg">Consumible</th>
+                                        <th class="p-3 font-semibold">Tipo</th>
+                                        <th class="p-3 font-semibold">Actual</th>
+                                        <th class="p-3 font-semibold rounded-r-lg">Mínimo</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dashboardLowStockTable" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                                <i class="fa-solid fa-clock-rotate-left text-indigo-500"></i> Últimos Abastecimientos
+                            </h3>
+                            <button onclick="switchTab('abastecimiento')" class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold">Ver todos &rarr;</button>
+                        </div>
+                        <div class="flex-1 overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-slate-50 text-slate-500 text-xs uppercase">
+                                    <tr>
+                                        <th class="p-3 font-semibold rounded-l-lg">Fecha</th>
+                                        <th class="p-3 font-semibold">Usuario Destino</th>
+                                        <th class="p-3 font-semibold">Consumible</th>
+                                        <th class="p-3 font-semibold rounded-r-lg">Cant</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dashboardRecentSurtsTable" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: INVENTARIO BODEGA -->
+            <div id="tab-inventario" class="space-y-6 fade-in hidden">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Inventario de Consumibles en Bodega</h2>
+                        <p class="text-sm text-slate-500">Gestión de stock, costos, facturas, proveedores y parámetros de compra.</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="if(verificarAccesoAdmin()) openModal('consumible')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-medium shadow-sm transition flex items-center gap-2">
+                            <i class="fa-solid fa-plus"></i> Registrar Nuevo Consumible
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
+                    <div class="w-full md:w-72 relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                            <i class="fa-solid fa-search"></i>
+                        </span>
+                        <input type="text" id="searchConsumibleInput" onkeyup="renderInventarioTable()" placeholder="Buscar por nombre, factura..." class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                        <select id="filterTipoConsumible" onchange="renderInventarioTable()" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm">
+                            <option value="">Todos los Tipos</option>
+                            <option value="Tóner">Tóner</option>
+                            <option value="Tinta">Tinta</option>
+                            <option value="Ribbon">Ribbon</option>
+                            <option value="Tarjeta PVC">Tarjeta PVC</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-500 text-xs uppercase font-semibold border-b border-slate-200">
+                                    <th class="p-4">Consumible</th>
+                                    <th class="p-4">Tipo</th>
+                                    <th class="p-4">Condición</th>
+                                    <th class="p-4">Stock Bodega</th>
+                                    <th class="p-4">Mínimo</th>
+                                    <th class="p-4">Costo Unit.</th>
+                                    <th class="p-4">Factura / Proveedor</th>
+                                    <th class="p-4 text-right">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inventarioTableBody" class="divide-y divide-slate-100 text-sm"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: ABASTECIMIENTO -->
+            <div id="tab-abastecimiento" class="space-y-6 fade-in hidden">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Surtido y Abastecimiento Interno</h2>
+                        <p class="text-sm text-slate-500">Control de entregas de consumibles a usuarios y grados académicos.</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="if(verificarAccesoAdmin()) openModal('surtido')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-medium shadow-sm transition flex items-center gap-2">
+                            <i class="fa-solid fa-hand-holding-droplet"></i> Nuevo Surtido / Entrega
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-500 text-xs uppercase font-semibold border-b border-slate-200">
+                                    <th class="p-4">Fecha Entrega</th>
+                                    <th class="p-4">Usuario Destino</th>
+                                    <th class="p-4">Grado Académico</th>
+                                    <th class="p-4">Consumible Surtido</th>
+                                    <th class="p-4">Cantidad</th>
+                                    <th class="p-4 text-right">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="surtidosTableBody" class="divide-y divide-slate-100 text-sm"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: REPORTES -->
+            <div id="tab-reportes" class="space-y-6 fade-in hidden">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Reportes y Exportación de Datos</h2>
+                        <p class="text-sm text-slate-500">Genere reportes en Excel, Word y PDF.</p>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                    <h3 class="text-lg font-bold text-slate-900 mb-2">Opciones de Exportación</h3>
+                    <p class="text-sm text-slate-500 mb-4">Utiliza los botones de la barra de navegación o genera respaldos locales.</p>
+                    <button onclick="exportData('inventario', 'excel')" class="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-medium">Exportar Inventario a Excel</button>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- MODAL CONSUMIBLE -->
+    <div id="modalConsumible" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-xl overflow-hidden fade-in">
+            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                <h3 id="modalConsumibleTitle" class="text-base font-bold text-slate-900">Registrar Nuevo Consumible</h3>
+                <button onclick="closeModal('consumible')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form id="formConsumible" onsubmit="saveConsumible(event)" class="p-6 space-y-4">
+                <input type="hidden" id="consumibleId">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Nombre del Consumible</label>
+                    <input type="text" id="nombreConsumible" required placeholder="Ej: Tóner HP LaserJet Pro 85A" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Tipo</label>
+                        <select id="tipoConsumible" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm">
+                            <option value="Tóner">Tóner</option>
+                            <option value="Tinta">Tinta</option>
+                            <option value="Ribbon">Ribbon</option>
+                            <option value="Tarjeta PVC">Tarjeta PVC</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Condición</label>
+                        <select id="condicionConsumible" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm">
+                            <option value="Original">Original</option>
+                            <option value="Compatible">Compatible</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Stock</label>
+                        <input type="number" id="stockConsumible" min="0" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Mínimo</label>
+                        <input type="number" id="minConsumible" min="0" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Costo Unit ($)</label>
+                        <input type="number" step="0.01" id="costoConsumible" min="0" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm">
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('consumible')" class="px-4 py-2 rounded-xl text-sm border border-slate-200">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 rounded-xl text-sm bg-indigo-600 text-white font-medium">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL SURTIDO -->
+    <div id="modalSurtido" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-xl overflow-hidden fade-in">
+            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                <h3 class="text-base font-bold text-slate-900">Registrar Nuevo Surtido</h3>
+                <button onclick="closeModal('surtido')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form id="formSurtido" onsubmit="saveSurtido(event)" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Usuario Destino</label>
+                    <input type="text" id="usuarioSurtido" required placeholder="Nombre del usuario" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Grado Académico</label>
+                        <select id="gradoSurtido" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm">
+                            <option value="Preparatoria">Preparatoria</option>
+                            <option value="Licenciatura">Licenciatura</option>
+                            <option value="Posgrados">Posgrados</option>
+                            <option value="Doctorado">Doctorado</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Cantidad a Surtir</label>
+                        <input type="number" id="cantidadSurtido" min="1" value="1" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm">
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('surtido')" class="px-4 py-2 rounded-xl text-sm border border-slate-200">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 rounded-xl text-sm bg-emerald-600 text-white font-medium">Registrar Surtido</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- SCRIPT DE GESTIÓN Y SEGURIDAD -->
+    <script>
+        const PASSWORD_ADMIN = "Lycos@Gladiador1972";
+
+        function verificarAccesoAdmin() {
+            const pass = prompt("🔒 ACCESO RESTRINGIDO:\nPara realizar modificaciones, ingrese la contraseña de administrador:");
+            if (pass === PASSWORD_ADMIN) {
+                return true;
+            } else if (pass !== null) {
+                alert("❌ Contraseña incorrecta. Operación denegada.");
+            }
+            return false;
+        }
+
+        let consumibles = JSON.parse(localStorage.getItem('lycos_consumibles')) || [];
+        let surtidos = JSON.parse(localStorage.getItem('lycos_surtidos')) || [];
+
+        function switchTab(tabId) {
+            ['dashboard', 'inventario', 'abastecimiento', 'reportes'].forEach(t => {
+                document.getElementById('tab-' + t).classList.add('hidden');
+                document.getElementById('nav-' + t)?.classList.remove('bg-indigo-50', 'text-indigo-700');
+                document.getElementById('nav-' + t)?.classList.add('text-slate-600');
+            });
+            document.getElementById('tab-' + tabId).classList.remove('hidden');
+            document.getElementById('nav-' + tabId)?.classList.add('bg-indigo-50', 'text-indigo-700');
+            document.getElementById('nav-' + tabId)?.classList.remove('text-slate-600');
+            updateDashboard();
+        }
+
+        function openModal(type) {
+            document.getElementById(type === 'consumible' ? 'modalConsumible' : 'modalSurtido').classList.remove('hidden');
+        }
+
+        function closeModal(type) {
+            document.getElementById(type === 'consumible' ? 'modalConsumible' : 'modalSurtido').classList.add('hidden');
+        }
+
+        function saveConsumible(e) {
+            e.preventDefault();
+            if (!verificarAccesoAdmin()) return;
+
+            const nuevo = {
+                id: Date.now(),
+                nombre: document.getElementById('nombreConsumible').value,
+                tipo: document.getElementById('tipoConsumible').value,
+                condicion: document.getElementById('condicionConsumible').value,
+                stock: parseInt(document.getElementById('stockConsumible').value),
+                min: parseInt(document.getElementById('minConsumible').value),
+                costo: parseFloat(document.getElementById('costoConsumible').value),
+                fecha: new Date().toLocaleDateString()
+            };
+            consumibles.push(nuevo);
+            localStorage.setItem('lycos_consumibles', JSON.stringify(consumibles));
+            closeModal('consumible');
+            renderInventarioTable();
+            updateDashboard();
+        }
+
+        function saveSurtido(e) {
+            e.preventDefault();
+            if (!verificarAccesoAdmin()) return;
+            alert("Surtido registrado correctamente.");
+            closeModal('surtido');
+        }
+
+        function renderInventarioTable() {
+            const tbody = document.getElementById('inventarioTableBody');
+            tbody.innerHTML = consumibles.length ? consumibles.map(c => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-4 font-medium text-slate-900">${c.nombre}</td>
+                    <td class="p-4">${c.tipo}</td>
+                    <td class="p-4">${c.condicion}</td>
+                    <td class="p-4 font-bold ${c.stock <= c.min ? 'text-rose-600' : 'text-slate-700'}">${c.stock}</td>
+                    <td class="p-4">${c.min}</td>
+                    <td class="p-4">$${c.costo.toFixed(2)}</td>
+                    <td class="p-4">${c.fecha}</td>
+                    <td class="p-4 text-right">
+                        <button onclick="if(verificarAccesoAdmin()) alert('Editar elemento')" class="text-indigo-600 hover:text-indigo-900 mr-2"><i class="fa-solid fa-pen"></i></button>
+                    </td>
+                </tr>
+            `).join('') : `<tr><td colspan="8" class="p-6 text-center text-slate-400">No hay consumibles registrados.</td></tr>`;
+        }
+
+        function updateDashboard() {
+            document.getElementById('statTotalItems').innerText = consumibles.length;
+            document.getElementById('statTotalStock').innerText = consumibles.reduce((acc, c) => acc + c.stock, 0);
+            const lowStock = consumibles.filter(c => c.stock <= c.min);
+            document.getElementById('statLowStock').innerText = lowStock.length;
+            document.getElementById('currentDateDisplay').innerText = new Date().toLocaleDateString();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateDashboard();
+            renderInventarioTable();
+        });
+    </script>
+</body>
+</html>
